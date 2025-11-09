@@ -1,149 +1,253 @@
-package com.excrele.cheststacker;  // Locked to com.excrele—our dev namespace. Keeps code organized like sorted chests!
+package com.excrele.cheststacker;  // Excrele squad HQ—our code home base!
 
-import org.bukkit.Material;  // For item/block types—like DIRT or CHEST. No ghosts here!
-import org.bukkit.block.Block;  // Basic block stuff—grabbing the chest under your feet.
-import org.bukkit.block.BlockState;  // Snapshot of a block's state (inv contents, etc.).
-import org.bukkit.entity.Player;  // The player clicking—our hero!
-import org.bukkit.event.EventHandler;  // "Hey server, run this on events!" sticker.
-import org.bukkit.event.Listener;  // Makes us an event catcher—watches inventory drama.
-import org.bukkit.event.inventory.InventoryClickEvent;  // Triggers on clicks/drags—our main stage!
-import org.bukkit.event.inventory.InventoryType;  // Types like PLAYER or CHEST—helps filter.
-import org.bukkit.inventory.Inventory;  // The open chest/barrel—full of loot!
-import org.bukkit.inventory.ItemStack;  // Single item stack—like 64 dirt.
+import org.bukkit.Material;  // Item types—like DIRT for that farm life.
+import org.bukkit.block.Block;  // Blocks in the world—chests you build!
+import org.bukkit.block.BlockState;  // Block freeze-frame—holds inv secrets.
+import org.bukkit.entity.Player;  // You, the player—clicking hero!
+import org.bukkit.event.EventHandler;  // "Server, call me on clicks!" Like a bell ringer.
+import org.bukkit.event.Listener;  // Event spy—catches all the action.
+import org.bukkit.event.inventory.ClickType;  // Click flavors—left, right, shift.
+import org.bukkit.event.inventory.InventoryClickEvent;  // Every tap in inv—our big stage!
+import org.bukkit.event.inventory.InventoryType;  // Inv styles—CHEST vs PLAYER.
+import org.bukkit.inventory.Inventory;  // The open box—slots full of goodies.
+import org.bukkit.inventory.ItemStack;  // One stack—like 999 cobble.
+import org.bukkit.inventory.meta.ItemMeta;  // Item's "ID card"—names, lores for tooltips!
 
 /**
- * Yo, young builder! This is the "watcher" that spots clicks in chests and merges stacks up to 1000.
- * Hold dirt, click a pile? It smooshes 'em! But your backpack? Stays 64-max—classic MC.
- * Modular: One file for events, easy to add "merge on hopper" later. No bloat!
- * Author: Excrele (com.excrele) – Stack huge, code simple. Let's build!
+ * Hey, young dev! This is the click wizard—merges stacks huge in chests, now with hover tips ("Merged: 512!")
+ * and splits (right-click for half, left for full—but pockets get max 64). Like a smart chest that whispers secrets.
+ * Modular: Helpers for lore/split—one job per method, easy tweaks. Debug? Spy lines for testing.
+ * Author: Excrele (com.excrele) – Tooltips pop, splits rock. Stack smart!
  */
-public class InventoryListener implements Listener {  // Listener = "I'm ready for action!"
+public class InventoryListener implements Listener {  // Listener = "Ready for clicks!"
 
-    // Max stack pulled from main plugin—one tweak rules all. Like a command block for sizes.
+    // Max mega-size from main—one tweak for all. Dream big: 1000+?
     private final int maxStackSize = ChestStackerPlugin.MAX_STACK_SIZE;
 
-    // Plugin link: For future configs/perms. Teamwork without tangled wires.
+    // Plugin pal: For logs (spy mode) or future configs.
     private final ChestStackerPlugin plugin;
 
-    // Setup method: Called when main plugin activates us. "Lights, camera, clicks!"
+    // Startup: Main plugin builds us—"Go watch those clicks, kid!"
     public InventoryListener(ChestStackerPlugin plugin) {
         this.plugin = plugin;
     }
 
     /**
-     * Event superstar! Fires on every inv click (left, shift, drag— all of 'em).
-     * Filters: Right spot? Same item? Merge city!
+     * Click central! Every poke in inv (chest/player) hits here. We sort, merge, split—like a redstone sorter.
      */
-    @EventHandler  // Bukkit tag: "Call me on clicks!" Clean, no old junk.
+    @EventHandler  // Fresh tag for 1.21— "Run on clicks!"
     public void onInventoryClick(InventoryClickEvent event) {
-        // Step 1: Snag player & inv. Safety first—no crashes on weird server hiccups.
+        // Step 1: Player & top inv (chest). Null? Weird—bail!
         Player player = (Player) event.getWhoClicked();
-        Inventory inventory = event.getInventory();
+        Inventory inventory = event.getInventory();  // Chest you're opening.
         if (player == null || inventory == null) {
-            return;  // Early out—like breaking a redstone line.
+            return;  // Safety net—like a fence around lava.
         }
 
-        // Step 2: Perm gate—modular! Only powered users get mega-stacks.
+        // Debug spy: What's happening? (Comment these for quiet mode.)
+        // plugin.getLogger().info("§e[Debug] Click! Inv: " + inventory.getName() + " | Type: " + inventory.getType() + " | Click: " + event.getClick() + " | Slot: " + event.getSlot());
+
+        // Step 2: No perm? Vanilla only—no mega fun.
         if (!player.hasPermission("cheststacker.use")) {
-            return;  // No pass? Vanilla 64 it is. Fair game!
-        }
-
-        // Step 3: Player's pockets? Skip—keep hotbar/backpack normal.
-        if (isPlayerInventory(inventory)) {
-            return;  // Classic MC vibes only here!
-        }
-
-        // Step 4: Supported container? Chests/barrels—yes! Random anvil? Nope.
-        if (!isSupportedContainer(inventory)) {
-            return;  // Wrong inv—no party.
-        }
-
-        // Step 5: Items check. Cursor = held stuff; clicked = target slot.
-        ItemStack cursorItem = event.getCursor();
-        ItemStack clickedItem = event.getCurrentItem();
-        int slot = event.getSlot();
-
-        // Step 6: Skip empties or mismatches (air? Tools? Bye!).
-        if (cursorItem == null || cursorItem.getType().isAir() ||
-                clickedItem == null || clickedItem.getType().isAir() ||
-                !cursorItem.isSimilar(clickedItem)) {  // Same type? Dirt + dirt = yes!
+            // plugin.getLogger().info("§e[Debug] No perm—vanilla city.");
             return;
         }
 
-        // Step 7: Hijack the click—vanilla's 64-limit? Canceled!
-        event.setCancelled(true);
+        // Step 3: Player pockets? Skip—64-max forever.
+        if (isPlayerInventory(inventory)) {
+            // plugin.getLogger().info("§e[Debug] Player inv—classic rules.");
+            return;
+        }
 
-        // Step 8: Merge math! Room left? Add min(held, room).
-        int spaceLeft = maxStackSize - clickedItem.getAmount();
-        int toAdd = Math.min(cursorItem.getAmount(), spaceLeft);
+        // Step 4: Supported chest-like? Yes—merge/split time!
+        if (!isSupportedContainer(inventory)) {
+            // Block block = getBlockFromInventory(inventory);
+            // plugin.getLogger().info("§e[Debug] Not supported: " + (block != null ? block.getType() : "No block"));
+            return;
+        }
+        // plugin.getLogger().info("§e[Debug] Container OK! Action time...");
 
-        if (toAdd > 0) {
-            // Do the swap: Grow slot, shrink held.
-            clickedItem.setAmount(clickedItem.getAmount() + toAdd);
-            cursorItem.setAmount(cursorItem.getAmount() - toAdd);
-
-            // Refresh inv—server updates the view. Like saving your world edit.
-            inventory.setItem(slot, clickedItem);
-
-            // Cursor cleanup: Gone? Clear. Leftover? Refresh.
-            if (cursorItem.getAmount() <= 0) {
-                event.setCursor(null);
-            } else {
-                event.setCursor(cursorItem);
-            }
-
-            // Victory chat: "Stacked X/1000 dirt!" Fun feedback.
-            player.sendMessage("§aMega-merge! §e" + clickedItem.getAmount() + "/" + maxStackSize +
-                    " §a" + clickedItem.getType().name().toLowerCase().replace("_", " ") + "§r loaded!");
+        // Step 5: Click type branch—shift for quick-merge, left/right for split/pull.
+        ClickType click = event.getClick();
+        if (click.isShiftClick()) {
+            handleShiftClick(event, player, inventory);  // Quick-move to chest—merge smart.
+        } else if (click == ClickType.LEFT || click == ClickType.RIGHT) {  // Pull/split from chest.
+            handlePullOrSplit(event, player, inventory);
+        } else {
+            // Other clicks (middle, drop)? Vanilla for now—keeps it simple.
+            // plugin.getLogger().info("§e[Debug] Other click—vanilla handles.");
         }
     }
 
     /**
-     * Quick check: Player's own inv? (Hotbar, crafting grid—vanilla zone.)
-     * Type peek—fast as a hopper!
+     * Shift-click: Zip from pockets to chest—merge to existing or new stack (up to 1000).
+     * Adds lore tooltip after!
+     */
+    private void handleShiftClick(InventoryClickEvent event, Player player, Inventory topInv) {
+        // Only shifts from player side (slots 0-35 = inv/hotbar).
+        if (event.getRawSlot() >= topInv.getSize() || event.getRawSlot() < 0) {  // Bottom half = player.
+            return;  // Shift from chest to player? Vanilla (we cap below if needed).
+        }
+
+        ItemStack item = event.getCurrentItem();  // Your stack—e.g., 64 wood.
+        if (item == null || item.getType().isAir()) {
+            return;  // Empty? No action.
+        }
+
+        event.setCancelled(true);  // Vanilla pause—we drive!
+        // plugin.getLogger().info("§e[Debug] Shift: " + item.getType() + " x" + item.getAmount());
+
+        int added = 0;  // Score: How much we packed?
+
+        // A: Merge to same-item slots with room.
+        for (int slot = 0; slot < topInv.getSize(); slot++) {
+            ItemStack slotItem = topInv.getItem(slot);
+            if (slotItem != null && slotItem.isSimilar(item) && slotItem.getAmount() < maxStackSize) {
+                int space = maxStackSize - slotItem.getAmount();
+                int addHere = Math.min(space, item.getAmount() - added);
+                slotItem.setAmount(slotItem.getAmount() + addHere);
+                addLore(slotItem);  // Secret note: "Merged: X/1000" for hover!
+                topInv.setItem(slot, slotItem);
+                added += addHere;
+                // plugin.getLogger().info("§e[Debug] Shift merge: +" + addHere + " to slot " + slot);
+                if (added >= item.getAmount()) break;
+            }
+        }
+
+        // B: Leftovers? New stack in empty slot (up to 1000).
+        if (added < item.getAmount()) {
+            for (int slot = 0; slot < topInv.getSize(); slot++) {
+                if (topInv.getItem(slot) == null || topInv.getItem(slot).getType().isAir()) {
+                    int remaining = item.getAmount() - added;
+                    int placeMax = Math.min(remaining, maxStackSize);
+                    ItemStack newStack = item.clone();
+                    newStack.setAmount(placeMax);
+                    addLore(newStack);  // Tooltip magic here too!
+                    topInv.setItem(slot, newStack);
+                    added += placeMax;
+                    // plugin.getLogger().info("§e[Debug] New shift stack: " + placeMax + " in " + slot);
+                    if (added >= item.getAmount()) break;
+                }
+            }
+        }
+
+        // C: Update player inv—remove what we took (leftover stays).
+        ItemStack leftover = item.clone();
+        leftover.setAmount(item.getAmount() - added);
+        player.getInventory().setItem(event.getSlot(), leftover.getAmount() > 0 ? leftover : null);
+
+        // Win message: "Packed 128 wood!"
+        if (added > 0) {
+            player.sendMessage("§aShift-packed! §e+" + added + " §a" + item.getType().name().toLowerCase().replace("_", " ") + " §ainto chest§r");
+        }
+    }
+
+    /**
+     * Left/right click: Pull whole/half from chest stack to cursor/player.
+     * Caps taken at 64 (vanilla pockets), updates remaining with lore.
+     */
+    private void handlePullOrSplit(InventoryClickEvent event, Player player, Inventory topInv) {
+        ItemStack clickedItem = event.getCurrentItem();  // Chest stack—e.g., 200 stone.
+        int slot = event.getSlot();  // Chest slot number.
+        if (clickedItem == null || clickedItem.getType().isAir()) {
+            return;  // Empty? Vanilla.
+        }
+
+        event.setCancelled(true);  // We control the pull!
+        // plugin.getLogger().info("§e[Debug] Pull/split: " + clickedItem.getType() + " x" + clickedItem.getAmount() + " | Click: " + event.getClick());
+
+        int takeAmount;
+        if (event.getClick() == ClickType.LEFT) {
+            // Left: Grab whole—but cap at 64 for cursor (pockets rule).
+            takeAmount = Math.min(64, clickedItem.getAmount());
+        } else {  // Right: Split half—but cap at 64.
+            takeAmount = Math.min(32, clickedItem.getAmount() / 2);  // Half, floored, capped.
+        }
+
+        if (takeAmount <= 0) {
+            return;  // Nothing to grab? Done.
+        }
+
+        // Shrink chest stack.
+        int remaining = clickedItem.getAmount() - takeAmount;
+        clickedItem.setAmount(remaining);
+        if (remaining > 0) {
+            addLore(clickedItem);  // Update tooltip: "Merged: 168/1000" on leftover!
+            topInv.setItem(slot, clickedItem);
+        } else {
+            topInv.setItem(slot, null);  // Empty? Clear slot.
+        }
+
+        // New stack for cursor—cloned, no lore (vanilla feel in hand).
+        ItemStack taken = clickedItem.clone();
+        taken.setAmount(takeAmount);
+        // Clear any old lore—pockets stay plain.
+        ItemMeta meta = taken.getItemMeta();
+        if (meta != null) {
+            meta.setLore(null);  // No secrets in your hand!
+            taken.setItemMeta(meta);
+        }
+        event.setCursor(taken);
+
+        // Chat flex: "Grabbed 64 stone (168 left)!"
+        String itemName = clickedItem.getType().name().toLowerCase().replace("_", " ");
+        player.sendMessage("§aSplit-pulled! §e" + takeAmount + " §a" + itemName +
+                (remaining > 0 ? " (§e" + remaining + " left§a)" : "") + "§r");
+        // plugin.getLogger().info("§e[Debug] Pulled " + takeAmount + " | Left: " + remaining);
+    }
+
+    /**
+     * Helper: Add hover tooltip lore—"§7Merged: 256/1000" (gray text, cool!).
+     * Like a sticky note on the item—shows when you mouse over in inv.
+     */
+    private void addLore(ItemStack item) {
+        if (item.getAmount() <= 64) return;  // Vanilla size? No note needed.
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            meta = item.getItemMeta() != null ? item.getItemMeta().clone() : item.getItemMeta();
+            item.setItemMeta(meta);
+        }
+        if (meta != null) {
+            meta.setLore(java.util.Arrays.asList("§7Merged: §f" + item.getAmount() + "/" + maxStackSize));
+            item.setItemMeta(meta);  // Stick it on—hover sees it!
+        }
+        // plugin.getLogger().info("§e[Debug] Added lore to " + item.getType() + ": " + item.getAmount());
+    }
+
+    /**
+     * Helper: Player's backpack/hotbar? Yes—skip mega stuff.
      */
     private boolean isPlayerInventory(Inventory inventory) {
-        return inventory.getType() == InventoryType.PLAYER ||  // Backpack/hotbar central.
-                inventory.getHolder() instanceof Player;  // Player-run grids too.
+        return inventory.getType() == InventoryType.PLAYER || inventory.getHolder() instanceof Player;
     }
 
     /**
-     * VIP list: Chests, barrels, shulkers? Green light!
-     * Modular: Add `|| type == Material.YOUR_NEW_BLOCK` easy.
+     * Helper: Chest fam? Whitelist for merges/splits.
      */
     private boolean isSupportedContainer(Inventory inventory) {
-        // Ender special: No block, but type screams "yes!"
-        if (inventory.getType() == InventoryType.ENDER_CHEST) {
-            return true;  // Your personal mega-vault—stack ender-style!
-        }
+        if (inventory.getType() == InventoryType.ENDER_CHEST) return true;  // Personal mega!
 
-        // Block hunt: Get the thing you're opening.
         Block block = getBlockFromInventory(inventory);
-        if (block == null) {
-            return false;
-        }
+        if (block == null) return false;
 
-        Material type = block.getType();  // What's this block? CHEST? BARREL?
-
-        // Whitelist party: Regular, trapped, barrels, shulkers. No ghosts!
+        Material type = block.getType();
         return type == Material.CHEST || type == Material.TRAPPED_CHEST ||
                 type == Material.BARREL || isShulkerBox(type);
     }
 
     /**
-     * Block grabber: From inv holder to real-world block. Double chests? Grabs one—inv sees both.
+     * Helper: Inv to block—easy peek.
      */
     private Block getBlockFromInventory(Inventory inventory) {
-        if (!(inventory.getHolder() instanceof BlockState)) {
-            return null;  // Not block-based? (Like ender.) No prob.
-        }
+        if (!(inventory.getHolder() instanceof BlockState)) return null;
         return ((BlockState) inventory.getHolder()).getBlock();
     }
 
     /**
-     * Shulker scanner: Any color? "_SHULKER_BOX" in name? Portable mega-stacks unlocked!
+     * Shulker check: Portable box? Yes if ends with _SHULKER_BOX.
      */
     private boolean isShulkerBox(Material material) {
-        return material.toString().endsWith("_SHULKER_BOX");  // White, black—fits all!
+        return material.toString().endsWith("_SHULKER_BOX");
     }
 }
