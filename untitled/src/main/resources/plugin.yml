@@ -1,0 +1,14 @@
+name: ChestStacker
+version: '${project.version}'  # Auto-fills from pom.xml—keeps versions in sync!
+main: com.excrele.cheststacker.ChestStackerPlugin  # Points to our main class (we'll make this next).
+author: Excrele  # Shoutout to the dev!
+description: Stack up to 1000 items in chests & barrels for mega storage! Normal inv stays vanilla.
+api-version: '1.20'  # MC version compat—bump for future.
+
+# Permissions: Who can use it? For now, everyone. Add more modules later.
+permissions:
+  cheststacker.use:
+    description: Allows stacking beyond 64 in supported containers.
+    default: true  # Everyone gets it—no config hassle.
+
+# No commands yet—keeps it simple. We'll add /stacker reload later if needed.
