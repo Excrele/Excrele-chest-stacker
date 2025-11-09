@@ -1,28 +1,35 @@
-package com.excrele.cheststacker;  // com.excrele all the way—pro namespace!
+package com.excrele.cheststacker;  // Our pro namespace—keeps code in the Excrele zone!
 
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.java.JavaPlugin;  // The base for all plugins—like the bedrock of your world.
 
 /**
- * Plugin brain: Starts us up! Registers listener for click magic.
- * Modular: Setup here, events elsewhere. Few files = quick tweaks.
- * Author: Excrele (com.excrele) – Chest stacking pro!
+ * Hey, teen coder! This is the plugin's "main menu"—runs when the server starts it up.
+ * It hooks up the listener (the click-watcher) so stacks can mega-merge in chests.
+ * Modular: Setup here, magic in another file. Few files = less mess to debug!
+ * Author: Excrele (com.excrele) – Stack like a pro, crash like never!
  */
-public final class ChestStackerPlugin extends JavaPlugin {
+public final class ChestStackerPlugin extends JavaPlugin {  // Extends JavaPlugin = "I'm a real plugin!"
 
-    public static final int MAX_STACK_SIZE = 1000;  // One-stop shop for stack limits.
+    // Global max stack—change this number once, it rules everywhere. Like a world edit for limits.
+    public static final int MAX_STACK_SIZE = 1000;
 
     @Override
     public void onEnable() {
-        saveDefaultConfig();  // Config ready if we add one.
+        // Old line: saveDefaultConfig();  // This tried to load a config.yml— but we got none! Crash city.
+        // Fixed: Skip it for now. No config needed (yet). Future? Add settings like "max_stack: 500".
+        // (We'll make config.yml later if we want reloadable tweaks.)
 
-        // Plug in the listener—now it watches all clicks!
+        // Step 1: Hook the listener! This watches for inventory clicks and does the merge dance.
         getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
 
-        getLogger().info("Excrele's Chest Stacker online! Mega-stacks up to " + MAX_STACK_SIZE + ". Build wild!");
+        // Step 2: Shout to console—"We're live!" Check here for success.
+        getLogger().info("Excrele's Chest Stacker fired up! Mega-stacks up to " + MAX_STACK_SIZE + " in chests & more. Go build!");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("Chest Stacker signing off. Happy stacking!");
+        // Cleanup party: Server shutting down? Say bye.
+        // (Nothing fancy yet—no open tasks to close.)
+        getLogger().info("Chest Stacker powering down. Keep those stacks epic!");
     }
 }

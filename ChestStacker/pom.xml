@@ -14,7 +14,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spigot.version>1.20.4-R0.1-SNAPSHOT</spigot.version> <!-- Bump this for newer MC versions -->
+        <spigot.version>1.21-R0.1-SNAPSHOT</spigot.version>  <!-- Bumped for Paper 1.21—future-proof! -->
     </properties>
 
     <!-- Repositories: Where Maven grabs Spigot jars from. Keeps us legal (no shady downloads). -->

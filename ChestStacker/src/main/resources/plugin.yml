@@ -1,14 +1,14 @@
 name: ChestStacker
-version: '${project.version}'  # Auto-fills from pom.xml—keeps versions in sync!
-main: com.excrele.cheststacker.ChestStackerPlugin  # Points to our main class (we'll make this next).
-author: Excrele  # Shoutout to the dev!
-description: Stack up to 1000 items in chests & barrels for mega storage! Normal inv stays vanilla.
-api-version: '1.20'  # MC version compat—bump for future.
+version: '${project.version}'  # Grabs from pom—auto-sync magic!
+main: com.excrele.cheststacker.ChestStackerPlugin  # Points to our main class—like a signpost.
+author: Excrele  # Dev cred—holla!
+description: Stack up to 1000 items in chests & barrels for epic storage! Player inv stays vanilla.
+api-version: '1.21'  # Matches your Paper server—smooth sailing!
 
-# Permissions: Who can use it? For now, everyone. Add more modules later.
+# Perms: Who gets the power? Everyone for now—easy mode.
 permissions:
   cheststacker.use:
-    description: Allows stacking beyond 64 in supported containers.
-    default: true  # Everyone gets it—no config hassle.
+    description: Unlocks mega-stacking in containers.
+    default: true  # All players can stack—no hassle.
 
-# No commands yet—keeps it simple. We'll add /stacker reload later if needed.
+# No commands—keeps it simple. Later: /stacker reload for config changes.
